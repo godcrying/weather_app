@@ -157,6 +157,9 @@ class MyWeatherApp(TransparentWindow):
         pass
 
     def update_weatherbox(self):
+        """
+        用Timer来定时。
+        """
         try:
             self.weather.update_forecasts()
             for box in self.weatherboxs:
@@ -176,7 +179,7 @@ class MyWeatherApp(TransparentWindow):
 
 if __name__ == '__main__':
     try:
-        weather = Weather("ASX", "yuncheng2.html")
+        weather = Weather("ABJ", "beijing.html")
         win = MyWeatherApp("weathers", weather)
     except Exception as e:
         print("Connect failed!!")
