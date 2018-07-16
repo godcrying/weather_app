@@ -1,0 +1,2 @@
+# weather_app
+一个用Python写的GTK界面的天气预报小程序
