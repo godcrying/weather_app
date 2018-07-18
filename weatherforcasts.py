@@ -47,7 +47,7 @@ class Weather():
             soup = BeautifulSoup(data, 'html.parser')
             # 发布时间
             publish_time = soup.find(class_="btitle")
-            print(publish_time.span.string.strip())
+            # print(publish_time.span.string.strip())
 
             # 获取天气预报部分
             forecasts = soup.find("div", {"id": "forecast"})

@@ -1,9 +1,8 @@
 #! /usr/bin/env python3
 
-import threading
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, GdkPixbuf, GObject
+from gi.repository import Gtk, Gdk, GdkPixbuf, GLib
 from urllib import request
 from transparentwindow import TransparentWindow
 from weatherforcasts import Weather
@@ -50,8 +49,9 @@ class WeatherBox(Gtk.Box):
                     img_loader = GdkPixbuf.PixbufLoader()
                     if img_loader.write(img_data):
                         img_loader.close()
-                        self.weather_items[key].set_from_pixbuf(
-                            img_loader.get_pixbuf())
+                        pixbuf = img_loader.get_pixbuf()
+                        if pixbuf is not None:
+                            self.weather_items[key].set_from_pixbuf(pixbuf)
                     else:
                         img_loader.close()
             else:
@@ -69,6 +69,9 @@ class MyWeatherApp(TransparentWindow):
 
         self.mainbox = Gtk.Box(spacing=10)
         self.menu = Gtk.Menu()
+
+        self.set_events(Gdk.EventMask.BUTTON_PRESS_MASK)
+        self.enable_drag = 1
 
         self.weather = weather
         self.weatherboxs = []
@@ -89,15 +92,34 @@ class MyWeatherApp(TransparentWindow):
         self.init_menu()
         self.init_style()
 
-        self.connect("button-press-event", self.show_menu)
+        self.connect("button-press-event", self.on_button_press)
 
-    def show_menu(self, widget, event, userdata=None):
+    def on_button_press(self, widget, event, userdata=None):
         '''
-        右键菜单
+        实现窗口移动及右键菜单
         '''
         if event.button == 3:
             self.menu.popup_at_pointer(event)
             self.menu.show_all()
+
+        if self.enable_drag == 1 and event.button == 1:
+            self.get_toplevel().begin_move_drag(
+                event.button,
+                event.x_root,
+                event.y_root,
+                event.time)
+        return True
+
+    def toggle_lock(self, widget):
+        '''
+        控制是否可以拖拽
+        '''
+        if self.enable_drag:
+            self.enable_drag = 0
+            widget.set_label("Unlock")
+        else:
+            self.enable_drag = 1
+            widget.set_label("Lock")
 
     def init_menu(self):
         """
@@ -109,7 +131,6 @@ class MyWeatherApp(TransparentWindow):
 
         menu_item_quit.connect("activate", self.window_quit)
         menu_item_lock.connect("activate", self.toggle_lock)
-        # submenu_change_theme.connect("activate", self.change_theme)
 
         """
         生成主题选择子菜单
@@ -156,37 +177,29 @@ class MyWeatherApp(TransparentWindow):
     def change_theme(self, widget, userdata=None):
         pass
 
-    def update_weatherbox(self):
-        """
-        用Timer来定时。
-        """
+    def update_weatherbox(self, userdata=None):
         try:
             self.weather.update_forecasts()
             for box in self.weatherboxs:
                 box.update_items()
-            print("Update successful!!")
+            print("Update successfully!!")
         except Exception as e:
-            print("Update failed, wait for next update")
-        self.timer = threading.Timer(60, self.update_weatherbox)
-        self.timer.daemon = True
-        self.timer.start()
+            print("Update failed, wait for next update!!")
+        finally:
+            return True
 
     def window_quit(self, widget, userdata=None):
-        if hasattr(self, "timer"):
-            self.timer.cancel()
         Gtk.main_quit()
 
 
 if __name__ == '__main__':
     try:
-        weather = Weather("ABJ", "beijing.html")
+        weather = Weather("ASX", "yuncheng2.html")
         win = MyWeatherApp("weathers", weather)
     except Exception as e:
-        print("Connect failed!!")
+        print("Connection failed!!")
         exit(-1)
     else:
-        timer = threading.Timer(30, win.update_weatherbox)
-        timer.daemon = True
-        timer.start()
+        timeoutid = GLib.timeout_add_seconds(60, win.update_weatherbox, None)
         win.show_all()
         Gtk.main()

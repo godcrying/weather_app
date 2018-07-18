@@ -1,6 +1,5 @@
 import gi
 import cairo
-import os
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GdkPixbuf
 
@@ -16,10 +15,6 @@ class TransparentWindow(Gtk.Window):
         self.set_skip_taskbar_hint(True)
         self.set_skip_pager_hint(True)
         self.stick()
-
-        self.enable_drag = 1
-        self.set_events(Gdk.EventMask.BUTTON_PRESS_MASK)
-        self.drag_handle = self.connect("button-press-event", self.start_drag)
 
         self.is_support_alpha = self.support_alpha()
         self.connect("draw", self.expose_draw)
@@ -48,25 +43,5 @@ class TransparentWindow(Gtk.Window):
 
         cr.set_operator(cairo.OPERATOR_SOURCE)
         cr.paint()
-        # 这里return False是为了阻止其他handler对信号的捕捉
+        # 这里return False是使draw信号冒泡
         return False
-
-    def start_drag(self, widget, event, userdata=None):
-        '''
-        实现窗口移动
-        '''
-        if self.enable_drag == 1 and event.button == 1:
-            self.begin_move_drag(event.button,
-                                 event.x_root, event.y_root,
-                                 event.time)
-
-    def toggle_lock(self, widget):
-        '''
-        控制是否可以拖拽
-        '''
-        if self.enable_drag:
-            self.enable_drag = 0
-            widget.set_label("Unlock")
-        else:
-            self.enable_drag = 1
-            widget.set_label("Lock")
